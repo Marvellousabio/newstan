@@ -1,0 +1,20 @@
+[debug] [2025-09-02T11:00:49.781Z] ----------------------------------------------------------------------
+[debug] [2025-09-02T11:00:49.786Z] Command:       C:\Program Files\nodejs\node.exe c:\Users\ADDIS\OneDrive\Desktop\medical\node_modules\firebase-tools\lib\bin\firebase.js login --no-localhost
+[debug] [2025-09-02T11:00:49.787Z] CLI Version:   14.15.1
+[debug] [2025-09-02T11:00:49.787Z] Platform:      win32
+[debug] [2025-09-02T11:00:49.787Z] Node Version:  v22.18.0
+[debug] [2025-09-02T11:00:49.788Z] Time:          Tue Sep 02 2025 12:00:49 GMT+0100 (West Africa Standard Time)
+[debug] [2025-09-02T11:00:49.788Z] ----------------------------------------------------------------------
+[debug] 
+[error] 
+[error] Error: Cannot run login in non-interactive mode. See login:ci to generate a token for use in non-interactive environments.
+[debug] [2025-09-02T11:02:16.318Z] ----------------------------------------------------------------------
+[debug] [2025-09-02T11:02:16.322Z] Command:       C:\Program Files\nodejs\node.exe c:\Users\ADDIS\OneDrive\Desktop\medical\node_modules\firebase-tools\lib\bin\firebase.js login:ci
+[debug] [2025-09-02T11:02:16.323Z] CLI Version:   14.15.1
+[debug] [2025-09-02T11:02:16.323Z] Platform:      win32
+[debug] [2025-09-02T11:02:16.323Z] Node Version:  v22.18.0
+[debug] [2025-09-02T11:02:16.324Z] Time:          Tue Sep 02 2025 12:02:16 GMT+0100 (West Africa Standard Time)
+[debug] [2025-09-02T11:02:16.324Z] ----------------------------------------------------------------------
+[debug] 
+[error] 
+[error] Error: Cannot run login:ci in non-interactive mode.

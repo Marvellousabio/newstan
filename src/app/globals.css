@@ -1,26 +1,279 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary: 34 197 94;
+  --primary-foreground: 255 255 255;
+  --secondary: 240 240 240;
+  --secondary-foreground: 0 0 0;
+  --muted: 245 245 245;
+  --muted-foreground: 115 115 115;
+  --accent: 240 240 240;
+  --accent-foreground: 0 0 0;
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+  --border: 229 229 229;
+  --input: 229 229 229;
+  --ring: 34 197 94;
+  --background: 255 255 255;
+  --foreground: 0 0 0;
+  --card: 255 255 255;
+  --card-foreground: 0 0 0;
+  --popover: 255 255 255;
+  --popover-foreground: 0 0 0;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  --primary: 34 197 94;
+  --primary-foreground: 255 255 255;
+  --secondary: 30 30 30;
+  --secondary-foreground: 255 255 255;
+  --muted: 30 30 30;
+  --muted-foreground: 163 163 163;
+  --accent: 30 30 30;
+  --accent-foreground: 255 255 255;
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+  --border: 30 30 30;
+  --input: 30 30 30;
+  --ring: 34 197 94;
+  --background: 0 0 0;
+  --foreground: 255 255 255;
+  --card: 0 0 0;
+  --card-foreground: 255 255 255;
+  --popover: 0 0 0;
+  --popover-foreground: 255 255 255;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: rgb(var(--border));
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Custom Components */
+.btn {
+  @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50 disabled:pointer-events-none;
+}
+
+.btn-primary {
+  @apply bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4;
+}
+
+.btn-secondary {
+  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 py-2 px-4;
+}
+
+.btn-destructive {
+  @apply bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 py-2 px-4;
+}
+
+.btn-outline {
+  @apply border border-input hover:bg-accent hover:text-accent-foreground h-10 py-2 px-4;
+}
+
+.btn-ghost {
+  @apply hover:bg-accent hover:text-accent-foreground h-10 py-2 px-4;
+}
+
+.btn-sm {
+  @apply h-9 px-3 rounded-md;
+}
+
+.btn-lg {
+  @apply h-11 px-8 rounded-md;
+}
+
+.card {
+  @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+}
+
+.input {
+  @apply flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+/* Emergency Button Styles */
+.emergency-btn {
+  @apply relative overflow-hidden rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg px-8 py-4 shadow-2xl transform transition-all duration-300 hover:scale-105 hover:shadow-red-500/25;
+}
+
+.emergency-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.emergency-btn:hover::before {
+  left: 100%;
+}
+
+.emergency-btn:active {
+  transform: scale(0.95);
+}
+
+/* Pulse Animation for Emergency */
+@keyframes emergency-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.emergency-pulse {
+  animation: emergency-pulse 2s infinite;
+}
+
+/* Loading Spinner */
+.spinner {
+  @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary;
+}
+
+/* Gradient Backgrounds */
+.gradient-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.medical-gradient {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--primary));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--primary) / 0.8);
+}
+
+/* Animation Classes */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Status Indicators */
+.status-online {
+  @apply bg-green-500;
+}
+
+.status-busy {
+  @apply bg-yellow-500;
+}
+
+.status-offline {
+  @apply bg-gray-500;
+}
+
+.status-emergency {
+  @apply bg-red-500;
+}
+
+/* Map Container */
+.map-container {
+  @apply w-full h-full rounded-lg overflow-hidden shadow-lg;
+}
+
+/* Video Call Styles */
+.video-call-container {
+  @apply relative w-full h-full bg-black rounded-lg overflow-hidden;
+}
+
+.video-local {
+  @apply absolute top-4 right-4 w-32 h-24 bg-gray-800 rounded-lg border-2 border-white;
+}
+
+.video-remote {
+  @apply w-full h-full bg-gray-900;
+}
+
+/* Notification Styles */
+.notification {
+  @apply fixed top-4 right-4 z-50 max-w-sm w-full bg-white rounded-lg shadow-lg border border-gray-200 p-4;
+}
+
+.notification-success {
+  @apply border-green-200 bg-green-50;
+}
+
+.notification-error {
+  @apply border-red-200 bg-red-50;
+}
+
+.notification-warning {
+  @apply border-yellow-200 bg-yellow-50;
+}
+
+/* Offline Indicator */
+.offline-indicator {
+  @apply fixed top-0 left-0 right-0 bg-red-600 text-white text-center py-2 text-sm z-50;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .emergency-btn {
+    @apply text-base px-6 py-3;
+  }
+
+  .card {
+    @apply mx-2;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }
