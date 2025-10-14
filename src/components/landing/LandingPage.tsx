@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 import { 
   MapPin, 
   Phone, 
@@ -13,10 +13,10 @@ import {
   Star,
   ArrowRight,
   Play,
-  CheckCircle,
-  Globe,
-  Smartphone,
-  Wifi,
+  // CheckCircle,
+  // Globe,
+  // Smartphone,
+  // Wifi,
   WifiOff
 } from 'lucide-react';
 import Link from 'next/link';
@@ -37,7 +37,7 @@ const staggerContainer = {
 
 export default function LandingPage() {
   const [isOnline, setIsOnline] = useState(true);
-  const router = useRouter();
+  // const router = useRouter();
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -122,7 +122,7 @@ export default function LandingPage() {
       {!isOnline && (
         <div className="offline-indicator">
           <WifiOff className="w-4 h-4 inline mr-2" />
-          You're offline - Emergency features still available
+          You&quot;re offline - Emergency features still available
         </div>
       )}
 
@@ -305,7 +305,7 @@ export default function LandingPage() {
               How It Works
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              From emergency to hospital in minutes - here's how we save lives
+              From emergency to hospital in minutes - here&pos;s how we save lives
             </p>
           </motion.div>
 
@@ -395,7 +395,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <p className="text-gray-600 mb-6 italic">
-                  "{testimonial.content}"
+                  &quot;{testimonial.content}&quot;
                 </p>
                 <div>
                   <div className="font-semibold text-gray-900">{testimonial.name}</div>

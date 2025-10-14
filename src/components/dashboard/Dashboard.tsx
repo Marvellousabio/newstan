@@ -8,14 +8,13 @@ import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { 
   MapPin, 
-  Phone, 
+   
   Heart, 
-  Clock, 
-  Users, 
+   
   Truck,
   Video,
   Bell,
-  Settings,
+  
   LogOut,
   Menu,
   X,
@@ -165,7 +164,7 @@ export default function Dashboard() {
                     setActiveTab(tab.id);
                     setSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                  className={`flex items-center w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
                     activeTab === tab.id
                       ? 'bg-green-100 text-green-700 border-r-2 border-green-500'
                       : 'text-gray-600 hover:bg-gray-100'

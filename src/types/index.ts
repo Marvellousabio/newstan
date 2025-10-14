@@ -21,6 +21,38 @@ export interface User {
     updatedAt: Date;
 }
 
+// Doctor Type
+export interface Doctor extends User {
+    specialization: string
+    hospitalId: string
+    yearsOfExperience?: number
+    qualifications?: string[]
+    rating?: number
+    isAvailable: boolean
+    licenseNumber?: string
+}
+
+// Nurse Type
+export interface Nurse extends User {
+    hospitalId: string
+    department?: string
+    shift?: 'morning' | 'evening' | 'night'
+    yearsOfExperience?: number
+    qualifications?: string[]
+    isAvailable: boolean
+}
+
+// Mother Type
+export interface Mother extends User {
+    age?: number
+    pregnanciesCount?: number
+    expectedDeliveryDate?: Date
+    hospitalId?: string
+    assignedDoctorId?: string
+    assignedNurseId?: string
+    emergencyHistory?: string[]
+}
+
 // Hospital Types
 export interface Hospital {
     id: string;
@@ -206,3 +238,17 @@ export interface RealtimeUpdate {
     data: any;
     timestamp: Date;
 }
+
+export function isDoctor(user: User): user is Doctor {
+    return user.role === 'doctor'
+}
+
+export function isNurse(user: User): user is Nurse {
+    return user.role === 'nurse'
+}
+
+export function isMother(user: User): user is Mother {
+    return user.role === 'mother'
+}
+
+
