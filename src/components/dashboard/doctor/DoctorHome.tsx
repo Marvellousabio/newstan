@@ -3,7 +3,7 @@ import SymptomsList from './SymptomsList'
 import ChatSection from './ChatSection'
 import EmergencyList from './EmergencyList'
 
-import type { FirestoreAppointment, FirestoreEmergency, FirestoreSymptom } from '../../../types/DoctorTypes'
+import type { FirestoreAppointment, FirestoreEmergency, FirestoreSymptom, FirestoreMessage } from '../../../types/DoctorTypes'
 import type { User } from '@/types'
 
 interface DoctorHomeProps {
@@ -11,11 +11,12 @@ interface DoctorHomeProps {
   emergencies: FirestoreEmergency[]
   symptoms: FirestoreSymptom[]
   selectedAppointment: FirestoreAppointment | null
-  chatMessages: any[]
+  chatMessages: FirestoreMessage[]
   messageText: string
   setMessageText: (v: string) => void
   onSendMessage: () => void
   onSelectAppointment: (a: FirestoreAppointment) => void
+  onAcceptAppointment: (a: FirestoreAppointment) => void
 }
 
 export default function DoctorHome({
@@ -28,6 +29,7 @@ export default function DoctorHome({
   setMessageText,
   onSendMessage,
   onSelectAppointment,
+  onAcceptAppointment,
 }: DoctorHomeProps) {
   return (
     <div className='mx-auto w-full'>
@@ -48,7 +50,8 @@ export default function DoctorHome({
             <div className="text-xs">Urgent</div>
             <div className="font-semibold">{emergencies.length}</div>
           </div>
-          <button onClick={() => acceptAppointment(appointments)}>Accept</button>
+          <button onClick={() => onAcceptAppointment(appointments[0])}>Accept</button>
+          {/* <IncomingCallModal /> */}
 
         </div>
       </div>
@@ -58,7 +61,7 @@ export default function DoctorHome({
           appointments={appointments}
           selectedAppointment={selectedAppointment}
           onSelect={onSelectAppointment}
-          onAccept={() => {}}
+          onAccept={onAcceptAppointment}
           onCall={() => {}}
           onOpenPatient={() => {}}
         />

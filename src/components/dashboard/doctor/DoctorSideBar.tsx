@@ -52,7 +52,7 @@ export default function DoctorSideBar({
       lg:translate-x-0 ${expanded ? 'w-56' : 'w-20'}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
+      <div className="flex items-center justify-between px-4 py-6 border-b">
         <div className="flex items-center space-x-2">
           {expanded && <div className="text-sm font-semibold">Doctor</div>}
         </div>
@@ -61,7 +61,7 @@ export default function DoctorSideBar({
           onClick={() => setExpanded(!expanded)}
           className="p-1 rounded hover:bg-gray-100 transition"
         >
-          {expanded ? <SidebarClose className="w-4 h-4" /> : <SidebarOpen className="w-4 h-4" />}
+          {expanded ? <SidebarClose className="w-5 h-5" /> : <SidebarOpen className="w-5 h-5" />}
         </button>
       </div>
 

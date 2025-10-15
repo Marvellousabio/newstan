@@ -2,21 +2,8 @@
 
 import { motion } from 'framer-motion';
 import React, { useEffect, useRef, useState } from 'react'
-import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  addDoc,
-  serverTimestamp,
-  doc,
-  updateDoc,
-  limit,
-} from 'firebase/firestore'
-import { auth, db as firebaseDb } from '@/lib/firebase'
+import { auth } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { User } from '@/types'
 import {
@@ -26,6 +13,16 @@ import {
   FirestoreCall,
   FirestoreMessage,
 } from '../../../types/DoctorTypes'
+import {
+  authenticateSession,
+  fetchAppointments,
+  fetchMessages,
+  sendMessage,
+  updateAppointment,
+  Appointment,
+  Message
+} from '@/lib/api'
+import { getSocket } from '@/lib/socket'
 
 import DoctorSideBar from './DoctorSideBar'
 import DoctorHeader from './DoctorHeader'
@@ -38,14 +35,9 @@ import IncomingCallModal from './IncomingCallModal'
 import VideoCallModal from './VideoCallModal'
 import PatientList from './PatientList'
 import ChatList from './ChatList'
-import VideoAppointments from './VideoAppointments'
 import DoctorSettings from './Setting'
 import VideoCall from '../VideoCall';
 import LocationTracker from '../LocationTracker';
-
-
-const DoctorVideoCall = dynamic(() => import('./VideoCallModal'), { ssr: false })
-const db = firebaseDb
 
 export default function DoctorDashboard() {
   const { user } = useAuth()
@@ -60,7 +52,7 @@ export default function DoctorDashboard() {
   const [appointments, setAppointments] = useState<FirestoreAppointment[]>([])
   const [selectedAppointment, setSelectedAppointment] =
     useState<FirestoreAppointment | null>(null)
-  const [symptoms, setSymptoms] = useState<FirestoreSymptom[]>([])
+  const [symptoms] = useState<FirestoreSymptom[]>([])
   const [chatMessages, setChatMessages] = useState<FirestoreMessage[]>([])
   const [messageText, setMessageText] = useState<string>('')
   const [showVideoCall, setShowVideoCall] = useState<boolean>(false)
@@ -82,74 +74,52 @@ const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: numbe
   ]
 
 
-  // Firestore listeners
-
-
-  useEffect(() => {
-    if (!user) return
-    const q = query(
-      collection(db, 'appointments'),
-      where('doctorId', '==', user.uid),
-      orderBy('scheduledAt', 'desc')
-    )
-    const unsub = onSnapshot(q, (snap) => {
-      const list: FirestoreAppointment[] = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as any),
-      }))
-      setAppointments(list)
-
-      if (!selectedAppointment && list.length) setSelectedAppointment(list[0])
-
-      const tenMinutesAgo = Date.now() - 10 * 60 * 1000
-      const recent = list.filter((a) => {
-        const created = (a as any).createdAt?.seconds
-          ? (a as any).createdAt.seconds * 1000
-          : (a as any).createdAt
-        return typeof created === 'number' && created >= tenMinutesAgo
-      })
-      setNewBookingsCount(recent.length)
-
-      setEmergencies(list.filter((a) => a.urgent === true))
-    })
-    return () => unsub()
-  }, [user])
+  // API data fetching
 
   useEffect(() => {
     if (!user) return
-    const q = query(
-      collection(db, 'symptoms'),
-      orderBy('createdAt', 'desc'),
-      limit(50)
-    )
-    const unsub = onSnapshot(q, (snap) => {
-      const list: FirestoreSymptom[] = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as any),
-      }))
-      setSymptoms(list)
-    })
-    return () => unsub()
-  }, [user])
 
-  useEffect(() => {
-    if (!user) return
-    const q = query(
-      collection(db, 'calls'),
-      where('doctorId', '==', user.uid),
-      where('status', 'in', ['requested', 'accepted']),
-      orderBy('createdAt', 'desc')
-    )
-    const unsub = onSnapshot(q, (snap) => {
-      if (!snap.empty) {
-        const callDoc = snap.docs[0]
-        setIncomingCall({ id: callDoc.id, ...(callDoc.data() as any) } as FirestoreCall)
-      } else {
-        setIncomingCall(null)
+    const loadAppointments = async () => {
+      try {
+        await authenticateSession()
+        const appointmentsData = await fetchAppointments(user.uid)
+        const firestoreAppointments: FirestoreAppointment[] = appointmentsData.map((appt: Appointment) => ({
+          id: appt.id,
+          motherId: appt.patientId,
+          motherName: 'Mother', // TODO: Fetch actual mother name from patient data
+          notes: appt.notes,
+          scheduledAt: new Date(appt.startAt),
+          status: appt.status,
+          urgent: appt.urgent,
+          createdAt: appt.createdAt,
+        }))
+        setAppointments(firestoreAppointments)
+
+        if (!selectedAppointment && firestoreAppointments.length) setSelectedAppointment(firestoreAppointments[0])
+
+        const tenMinutesAgo = Date.now() - 10 * 60 * 1000
+        const recent = firestoreAppointments.filter((a) => {
+          const created = typeof a.createdAt === 'object' && a.createdAt.seconds
+            ? a.createdAt.seconds * 1000
+            : new Date(a.createdAt).getTime()
+          return created >= tenMinutesAgo
+        })
+        setNewBookingsCount(recent.length)
+
+        setEmergencies(firestoreAppointments.filter((a) => a.urgent === true))
+      } catch (error) {
+        console.error('Failed to load appointments:', error)
       }
-    })
-    return () => unsub()
-  }, [user])
+    }
+
+    loadAppointments()
+  }, [user, selectedAppointment])
+
+  // Symptoms are handled via appointments/emergencies for now
+  // Could be fetched from API if needed
+
+  // Video calls - for now, keep Firebase for real-time calls
+  // Could be replaced with polling or WebSocket for calls
 
   useEffect(() => {
     if (!selectedAppointment) {
@@ -157,18 +127,46 @@ const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: numbe
       chatRoomRef.current = null
       return
     }
-    const roomId = `appointment_${selectedAppointment.id}`
-    chatRoomRef.current = roomId
-    const q = query(
-      collection(db, 'chats', roomId, 'messages'),
-      orderBy('createdAt', 'asc')
-    )
-    const unsub = onSnapshot(q, (snap) => {
-      const msgs = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }))
-      setChatMessages(msgs)
+
+    const loadMessages = async () => {
+      try {
+        await authenticateSession()
+        const threadId = `appointment_${selectedAppointment.id}`
+        chatRoomRef.current = threadId
+        const messagesData = await fetchMessages(threadId)
+        const firestoreMessages: FirestoreMessage[] = messagesData.map((msg: Message) => ({
+          id: msg.id,
+          threadId: msg.threadId,
+          senderId: msg.senderId,
+          text: msg.text,
+          createdAt: msg.createdAt,
+        }))
+        setChatMessages(firestoreMessages)
+      } catch (error) {
+        console.error('Failed to load messages:', error)
+      }
+    }
+
+    loadMessages()
+
+    // Set up Socket.IO for real-time messages
+    const socket = getSocket()
+    socket.on('message:new', (message: { id: string; threadId: string; senderId: string; text: string; createdAt: string | number | Date }) => {
+      if (message.threadId === chatRoomRef.current) {
+        setChatMessages(prev => [...prev, {
+          id: message.id,
+          threadId: message.threadId,
+          senderId: message.senderId,
+          text: message.text,
+          createdAt: message.createdAt,
+        }])
+      }
     })
-    return () => unsub()
-  }, [selectedAppointment])
+
+    return () => {
+      socket.off('message:new')
+    }
+  }, [selectedAppointment, user])
 
   // ---------------------------
   //  Core Handlers
@@ -179,50 +177,45 @@ const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: numbe
     router.push('/')
   }
 
-  const sendMessage = async () => {
+  const sendChatMessage = async () => {
     if (!chatRoomRef.current || !messageText.trim() || !user) return
-    await addDoc(collection(db, 'chats', chatRoomRef.current, 'messages'), {
-      text: messageText.trim(),
-      senderId: user.uid,
-      createdAt: serverTimestamp(),
-    })
-    setMessageText('')
+    try {
+      await authenticateSession()
+      await sendMessage(chatRoomRef.current, messageText.trim())
+      setMessageText('')
+    } catch (error) {
+      console.error('Failed to send message:', error)
+    }
   }
 
   const acceptAppointment = async (appt: FirestoreAppointment) => {
     if (!appt?.id) return
-    await updateDoc(doc(db, 'appointments', appt.id), { status: 'accepted' })
+    try {
+      await authenticateSession()
+      await updateAppointment(appt.id, { status: 'accepted' })
+    } catch (error) {
+      console.error('Failed to accept appointment:', error)
+    }
   }
 
-  const openVideoForAppointment = (appt: FirestoreAppointment) => {
-    setSelectedAppointment(appt)
-    setShowVideoCall(true)
-  }
 
+  // Video call handlers - keeping Firebase for now as calls need real-time
   const acceptIncomingCall = async () => {
     if (!incomingCall) return
-    await updateDoc(doc(db, 'calls', incomingCall.id), {
-      status: 'accepted',
-      answeredBy: user?.uid,
-      answeredAt: serverTimestamp(),
-    })
+    // TODO: Replace with API call when calls API is implemented
     setShowVideoCall(true)
   }
 
   const declineIncomingCall = async () => {
     if (!incomingCall) return
-    await updateDoc(doc(db, 'calls', incomingCall.id), {
-      status: 'declined',
-      declinedBy: user?.uid,
-      declinedAt: serverTimestamp(),
-    })
+    // TODO: Replace with API call when calls API is implemented
     setIncomingCall(null)
   }
 
   const endVideoCallViaModal = async () => {
     setShowVideoCall(false)
     if (incomingCall) {
-      await updateDoc(doc(db, 'calls', incomingCall.id), { status: 'ended' })
+      // TODO: Replace with API call when calls API is implemented
       setIncomingCall(null)
     }
   }
@@ -242,13 +235,14 @@ const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: numbe
             messageText={messageText}
             setMessageText={setMessageText}
             selectedAppointment={selectedAppointment}
-            onSendMessage={sendMessage}
+            onSendMessage={sendChatMessage}
             onSelectAppointment={(appt) => setSelectedAppointment(appt)}
+            onAcceptAppointment={acceptAppointment}
           />
         )
 
       case 'patients':
-        return (<PatientList doctorId={user?.uid!} />)
+        return (<PatientList doctorId={user?.uid || ''} />)
 
       case 'chats':
         return (
@@ -262,8 +256,8 @@ const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: numbe
             messages={chatMessages}
             messageText={messageText}
             setMessageText={setMessageText}
-            onSend={sendMessage}
-            user={user as User}
+            onSend={sendChatMessage}
+            user={user as User | null}
           /></>
         )
 
@@ -297,11 +291,24 @@ const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: numbe
       case 'settings':
         return (
           <DoctorSettings
-          user={user as User}
+          user={user as User | null}
           />
         )
       default:
-        return <DoctorHome />
+        return (
+          <DoctorHome
+            appointments={appointments}
+            emergencies={emergencies}
+            symptoms={symptoms}
+            chatMessages={chatMessages}
+            messageText={messageText}
+            setMessageText={setMessageText}
+            selectedAppointment={selectedAppointment}
+            onSendMessage={sendChatMessage}
+            onSelectAppointment={(appt) => setSelectedAppointment(appt)}
+            onAcceptAppointment={acceptAppointment}
+          />
+        )
     }
   }
 
@@ -318,7 +325,7 @@ const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: numbe
         navItems={navItems}
         user={user as User | null}
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab: string) => setActiveTab(tab as 'home' | 'patients' | 'chats' | 'video' | 'alerts' | 'settings')}
       />
 
       {sidebarOpen && (

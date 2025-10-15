@@ -10,6 +10,7 @@ const rateLimit = require('express-rate-limit');
 const admin = require('firebase-admin');
 const path = require('path');
 
+
 // Robust Firebase Admin initialization: prefer service account JSON via env, fallback to ADC
 (function initFirebaseAdmin() {
   try {
@@ -20,7 +21,7 @@ const path = require('path');
       tryPaths.push(path.isAbsolute(saPath) ? saPath : path.resolve(process.cwd(), saPath));
     }
     // Known default relative to server directory -> project root
-    tryPaths.push(path.resolve(__dirname, '..', 'medical-8d62a-firebase-adminsdk-fbsvc-3999168c80.json'));
+    tryPaths.push(path.resolve(__dirname, '.', '/medtech-79de4-firebase-adminsdk-fbsvc-7439f9f1b8.json'));
 
     for (const p of tryPaths) {
       try {
@@ -563,16 +564,41 @@ app.post('/api/admin/users/:uid/role', requireRole('admin'), async (req, res, ne
   try {
     const uid = req.params.uid;
     const role = String(req.body?.role || '').trim();
-    const allowed = new Set(['admin', 'doctor', 'nurse', 'patient']);
+    const allowed = new Set(['mother', 'doctor', 'nurse', 'driver', 'admin']);
     if (!allowed.has(role)) return res.status(400).json({ error: 'INVALID_ROLE' });
     await admin.auth().setCustomUserClaims(uid, { role });
     res.json({ ok: true, uid, role });
   } catch (err) { next(err); }
 });
 
+
+
+// //after signup
+app.post('/api/users/:uid/set-role', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split('Bearer ')[1];
+    if (!token) return res.status(401).json({ error: 'UNAUTHORIZED' });
+    const decoded = await admin.auth().verifyIdToken(token);
+    if (decoded.uid !== req.params.uid) return res.status(403).json({ error: 'FORBIDDEN' });
+
+    const { role } = req.body;
+    const allowed = ['mother', 'doctor', 'nurse', 'driver', 'admin'];
+    if (!allowed.includes(role)) return res.status(400).json({ error: 'INVALID_ROLE' });
+
+    await admin.auth().setCustomUserClaims(req.params.uid, { role });
+    res.json({ ok: true, uid: req.params.uid, role });
+  } catch (error) {
+    console.error('Error setting role:', error);
+    res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });
+  }
+});
+
+
+
+
 // === Messaging API ===
 // Create a thread with members (includes current user)
-app.post('/api/threads', requireRole('doctor', 'nurse', 'admin', 'patient'), async (req, res, next) => {
+app.post('/api/threads', requireRole('doctor', 'nurse', 'admin', 'mother'), async (req, res, next) => {
   try {
     const members = Array.isArray(req.body?.members) ? req.body.members.map(String) : [];
     const uid = req.user && req.user.uid;
@@ -599,7 +625,7 @@ app.post('/api/threads', requireRole('doctor', 'nurse', 'admin', 'patient'), asy
 });
 
 // List threads for a member (defaults to current user)
-app.get('/api/threads', requireRole('doctor', 'nurse', 'admin', 'patient'), async (req, res, next) => {
+app.get('/api/threads', requireRole('doctor', 'nurse', 'admin', 'mother'), async (req, res, next) => {
   try {
     const uid = (typeof req.query.member === 'string' && req.query.member.trim()) || (req.user && req.user.uid);
     if (!uid) return res.status(401).json({ error: 'UNAUTHORIZED' });
@@ -611,7 +637,7 @@ app.get('/api/threads', requireRole('doctor', 'nurse', 'admin', 'patient'), asyn
 });
 
 // List messages in a thread
-app.get('/api/messages', requireRole('doctor', 'nurse', 'admin', 'patient'), async (req, res, next) => {
+app.get('/api/messages', requireRole('doctor', 'nurse', 'admin', 'mother'), async (req, res, next) => {
   try {
     const threadId = String(req.query.threadId || '').trim();
     if (!threadId) return res.status(400).json({ error: 'threadId is required' });
@@ -628,7 +654,7 @@ app.get('/api/messages', requireRole('doctor', 'nurse', 'admin', 'patient'), asy
 });
 
 // Send a message
-app.post('/api/messages', requireRole('doctor', 'nurse', 'admin', 'patient'), async (req, res, next) => {
+app.post('/api/messages', requireRole('doctor', 'nurse', 'admin', 'mother'), async (req, res, next) => {
   try {
     const { threadId, text } = req.body || {};
     const uid = req.user && req.user.uid;
@@ -683,6 +709,7 @@ app.post('/api/session', async (req, res, next) => {
     });
     return res.json({ ok: true, uid: decoded.uid });
   } catch (err) {
+    
     return next(err);
   }
 });
@@ -698,6 +725,8 @@ app.post('/api/session/logout', async (req, res) => {
   });
   res.status(200).json({ ok: true });
 });
+
+
 
 // Centralized error handler
 // eslint-disable-next-line no-unused-vars

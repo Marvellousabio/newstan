@@ -42,5 +42,6 @@ next-env.d.ts
 
 # Firebase
 medical-8d62a-firebase-adminsdk-fbsvc-3999168c80.json
-server/medtech-79de4-firebase-adminsdk-fbsvc-febf2daa4b.json
+
+medtech-79de4-firebase-adminsdk-fbsvc-7439f9f1b8.json
 server/.env

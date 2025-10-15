@@ -15,9 +15,9 @@ type Props = {
 export default function DoctorHeader({ user, onToggleSidebar, onLogout, newBookingsCount }: Props) {
   return (
     <header className="bg-white border-b shadow-sm">
-      <div className="flex justify-between items-center px-6 py-4">
+      <div className="flex justify-between items-center lg:pl-8 px-6 py-4">
         <div className="flex items-center space-x-3">
-          <button onClick={onToggleSidebar} className="lg:hidden p-2 rounded-md text-gray-600 hover:bg-gray-100">
+          <button aria-label='menu' onClick={onToggleSidebar} className="lg:hidden p-2 rounded-md text-gray-600 hover:bg-gray-100">
             <Menu className="w-6 h-6" />
           </button>
 
@@ -37,7 +37,7 @@ export default function DoctorHeader({ user, onToggleSidebar, onLogout, newBooki
             <span className="text-sm text-gray-700 ml-1">{newBookingsCount} new</span>
           </div>
 
-          <button onClick={onLogout} className="p-2 hover:bg-gray-100 rounded">
+          <button aria-label='logout' onClick={onLogout} className="p-2 hover:bg-gray-100 rounded">
             <LogOut className="w-5 h-5 text-gray-600" />
           </button>
         </div>

@@ -3,8 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getClientAuth } from "@/lib/firebase";
+import { getClientAuth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -12,6 +13,7 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  
 
   const validate = () => {
     if (!email || !password) {
@@ -41,20 +43,39 @@ export default function LoginForm() {
       // Firebase Auth: sign in and create secure session via backend
       const cred = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await cred.user.getIdToken();
+      
+       const userDocRef = doc(db, "users", cred.user.uid);
+      const userSnap = await getDoc(userDocRef);
+
+      if (!userSnap.exists()) {
+        throw new Error("User record not found in database.");
+      }
+
+      const userData = userSnap.data();
+      const role = userData.role;
+
+      if (!role) {
+        throw new Error("User role not assigned.");
+      }
+
       const base = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3001";
       const resp = await fetch(`${base}/api/session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ idToken }),
+        body: JSON.stringify({ idToken }), 
       });
+      
       if (!resp.ok) throw new Error(`Session create failed (${resp.status})`);
-      router.push("/dashboard");
-    } catch (err: any) {
-      setError(err?.message || "Login failed.");
+       router.push(`/dashboard/${role}`);
+      
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error?.message || "Login failed.");
     } finally {
       setLoading(false);
     }
+    
   };
 
   return (

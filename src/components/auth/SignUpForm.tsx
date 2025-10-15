@@ -5,14 +5,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { db, getClientAuth } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import {  doc, setDoc, serverTimestamp } from "firebase/firestore";
+
+
+type Role = "mother" | "doctor" | "nurse" | "driver" | "admin";
 
 export default function SignUpForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [role, setRole] = useState<"mother" | "doctor" | "driver" | "admin" | "">("");
+  const [role, setRole] = useState<"mother" | "doctor" | "nurse" | "driver" | "admin" | "">("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -58,26 +61,46 @@ export default function SignUpForm() {
         email,
         role,
         phone: null,
-        location: null,
+        location: { lat: 0, lng: 0 },
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-
-      const idToken = await cred.user.getIdToken();
       const base = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3001";
+
+
+
+      const idToken = await cred.user.getIdToken(true);
+      
       const resp = await fetch(`${base}/api/session`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" , 'Authorization': `Bearer ${idToken}`,},
         credentials: "include",
         body: JSON.stringify({ idToken }),
       });
+     
       if (!resp.ok) throw new Error(`Session create failed (${resp.status})`);
-      router.push("/dashboard");
-    } catch (err: any) {
-      setError(err?.message || "Sign up failed.");
+     const roleResp = await fetch(`${base}/api/users/${cred.user.uid}/set-role`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
+        'Content-Type': 'application/json'
+
+      },
+      credentials: "include",
+      body: JSON.stringify({ role})
+    });
+     if (!roleResp.ok) throw new Error(`Role assign failed (${roleResp.status})`);
+      router.push(`/dashboard/${role}`);
+      
+    } catch (err: unknown) {
+    if (err instanceof Error) setError(err.message);
+    else setError("Sign up failed.");
     } finally {
       setLoading(false);
     }
+      
+  
+
   };
 
   return (
@@ -101,12 +124,13 @@ export default function SignUpForm() {
             <select
               id="role"
               value={role}
-              onChange={(e) => setRole(e.target.value as any)}
+              onChange={(e) => setRole(e.target.value as Role) }
               className="w-full rounded border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select role</option>
               <option value="mother">Mother</option>
-              <option value="doctor">Doctor/Nurse</option>
+              <option value="doctor">Doctor</option>
+              <option value="nurse">Nurse</option>
               <option value="driver">Ambulance Driver</option>
               <option value="admin">Hospital Admin</option>
             </select>

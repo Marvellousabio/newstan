@@ -40,6 +40,8 @@ export default function Dashboard() {
   const [currentLocation, setCurrentLocation] = useState<{lat: number, lng: number} | null>(null);
   const [activeTab, setActiveTab] = useState('emergency');
 
+  
+
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);

@@ -34,7 +34,7 @@ export default function AppointmentList({ appointments, selectedAppointment, onS
             </div>
 
             <div className="mt-3 flex items-center justify-between">
-              <div className="text-sm font-semibold text-blue-600">{a.scheduledAt ? new Date((a.scheduledAt as any)?.seconds * 1000).toLocaleTimeString() : 'TBD'}</div>
+              <div className="text-sm font-semibold text-blue-600">{a.scheduledAt ? new Date((a.scheduledAt as { seconds: number })?.seconds * 1000).toLocaleTimeString() : 'TBD'}</div>
               <div className="flex items-center space-x-2">
                 <button onClick={(e) => { e.stopPropagation(); onAccept(a); }} className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 flex items-center space-x-1">
                   <Check className="w-4 h-4" /> <span>Accept</span>
