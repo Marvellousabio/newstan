@@ -1,6 +1,7 @@
 import { initializeApp, FirebaseApp, getApps } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
+import { getDatabase, Database } from "firebase/database";
 import { getFunctions, Functions } from "firebase/functions";
 import { getMessaging, Messaging, getToken } from "firebase/messaging";
 
@@ -21,6 +22,7 @@ const app: FirebaseApp = getApps()[0] || initializeApp(firebaseConfig);
 // Services
 export const auth: Auth = getAuth(app);
 export const db: Firestore = getFirestore(app);
+export const realtimeDb: Database = getDatabase(app);
 export const functions: Functions = getFunctions(app);
 
 // Messaging only on client

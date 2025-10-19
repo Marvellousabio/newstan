@@ -19,8 +19,12 @@ import {
   fetchMessages,
   sendMessage,
   updateAppointment,
+  fetchSymptoms,
+  fetchMothers,
   Appointment,
-  Message
+  Message,
+  Symptom,
+  Mother
 } from '@/lib/api'
 import { getSocket } from '@/lib/socket'
 
@@ -28,16 +32,17 @@ import DoctorSideBar from './DoctorSideBar'
 import DoctorHeader from './DoctorHeader'
 import DoctorHome from './DoctorHome'
 // import AppointmentList from './AppointmentList'
-// import SymptomsList from './SymptomsList'
+import SymptomsList from './SymptomsList'
 import ChatSection from './ChatSection'
 import EmergencyList from './EmergencyList'
 import IncomingCallModal from './IncomingCallModal'
 import VideoCallModal from './VideoCallModal'
-import PatientList from './PatientList'
+import MotherList from './MotherList'
 import ChatList from './ChatList'
 import DoctorSettings from './Setting'
 import VideoCall from '../VideoCall';
 import LocationTracker from '../LocationTracker';
+import { signOut } from 'firebase/auth';
 
 export default function DoctorDashboard() {
   const { user } = useAuth()
@@ -52,8 +57,9 @@ export default function DoctorDashboard() {
   const [appointments, setAppointments] = useState<FirestoreAppointment[]>([])
   const [selectedAppointment, setSelectedAppointment] =
     useState<FirestoreAppointment | null>(null)
-  const [symptoms] = useState<FirestoreSymptom[]>([])
+  const [symptoms, setSymptoms] = useState<FirestoreSymptom[]>([])
   const [chatMessages, setChatMessages] = useState<FirestoreMessage[]>([])
+  const [mothers, setMothers] = useState<Mother[]>([])
   const [messageText, setMessageText] = useState<string>('')
   const [showVideoCall, setShowVideoCall] = useState<boolean>(false)
   const [incomingCall, setIncomingCall] = useState<FirestoreCall | null>(null)
@@ -83,16 +89,19 @@ const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: numbe
       try {
         await authenticateSession()
         const appointmentsData = await fetchAppointments(user.uid)
-        const firestoreAppointments: FirestoreAppointment[] = appointmentsData.map((appt: Appointment) => ({
-          id: appt.id,
-          motherId: appt.patientId,
-          motherName: 'Mother', // TODO: Fetch actual mother name from patient data
-          notes: appt.notes,
-          scheduledAt: new Date(appt.startAt),
-          status: appt.status,
-          urgent: appt.urgent,
-          createdAt: appt.createdAt,
-        }))
+        const firestoreAppointments: FirestoreAppointment[] = appointmentsData.map((appt: Appointment) => {
+          const mother = mothers.find(m => m.id === appt.motherId)
+          return {
+            id: appt.id,
+            motherId: appt.motherId,
+            motherName: mother ? mother.name : 'Mother',
+            notes: appt.notes,
+            scheduledAt: new Date(appt.startAt),
+            status: appt.status,
+            urgent: appt.urgent,
+            createdAt: appt.createdAt,
+          }
+        })
         setAppointments(firestoreAppointments)
 
         if (!selectedAppointment && firestoreAppointments.length) setSelectedAppointment(firestoreAppointments[0])
@@ -115,11 +124,50 @@ const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: numbe
     loadAppointments()
   }, [user, selectedAppointment])
 
-  // Symptoms are handled via appointments/emergencies for now
-  // Could be fetched from API if needed
+  // Fetch mothers data
+  useEffect(() => {
+    if (!user) return
 
-  // Video calls - for now, keep Firebase for real-time calls
-  // Could be replaced with polling or WebSocket for calls
+    const loadMothers = async () => {
+      try {
+        await authenticateSession()
+        const mothersData = await fetchMothers()
+        setMothers(mothersData)
+      } catch (error) {
+        console.error('Failed to load mothers:', error)
+      }
+    }
+
+    loadMothers()
+  }, [user])
+
+  // Fetch symptoms
+  useEffect(() => {
+    if (!user) return
+
+    const loadSymptoms = async () => {
+      try {
+        await authenticateSession()
+        const symptomsData = await fetchSymptoms()
+        const firestoreSymptoms: FirestoreSymptom[] = symptomsData.map((symptom: Symptom) => ({
+          id: symptom.id,
+          motherId: symptom.motherId,
+          summary: symptom.summary,
+          details: symptom.details,
+          createdAt: symptom.createdAt,
+        }))
+        setSymptoms(firestoreSymptoms)
+      } catch (error) {
+        console.error('Failed to load symptoms:', error)
+      }
+    }
+
+    loadSymptoms()
+  }, [user])
+
+  // Symptoms are now fetched from API
+
+  // Video calls - now integrated with API calls
 
   useEffect(() => {
     if (!selectedAppointment) {
@@ -173,8 +221,15 @@ const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: numbe
   // ---------------------------
 
   const handleLogout = async () => {
-    await auth.signOut()
-    router.push('/')
+     try {
+          await signOut(auth);
+          try {
+            await fetch('/api/logout', { method: 'POST' });
+          } catch {}
+          router.push('/');
+        } catch (error) {
+          console.error('Logout error:', error);
+        }
   }
 
   const sendChatMessage = async () => {
@@ -199,24 +254,39 @@ const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: numbe
   }
 
 
-  // Video call handlers - keeping Firebase for now as calls need real-time
+  // Video call handlers - now with API integration
   const acceptIncomingCall = async () => {
     if (!incomingCall) return
-    // TODO: Replace with API call when calls API is implemented
-    setShowVideoCall(true)
+    try {
+      await authenticateSession()
+      // TODO: Implement accept call API endpoint
+      setShowVideoCall(true)
+    } catch (error) {
+      console.error('Failed to accept call:', error)
+    }
   }
 
   const declineIncomingCall = async () => {
     if (!incomingCall) return
-    // TODO: Replace with API call when calls API is implemented
-    setIncomingCall(null)
+    try {
+      await authenticateSession()
+      // TODO: Implement decline call API endpoint
+      setIncomingCall(null)
+    } catch (error) {
+      console.error('Failed to decline call:', error)
+    }
   }
 
   const endVideoCallViaModal = async () => {
     setShowVideoCall(false)
     if (incomingCall) {
-      // TODO: Replace with API call when calls API is implemented
-      setIncomingCall(null)
+      try {
+        await authenticateSession()
+        // TODO: Implement end call API endpoint
+        setIncomingCall(null)
+      } catch (error) {
+        console.error('Failed to end call:', error)
+      }
     }
   }
 
@@ -242,7 +312,7 @@ const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: numbe
         )
 
       case 'patients':
-        return (<PatientList doctorId={user?.uid || ''} />)
+        return (<MotherList doctorId={user?.uid || ''} />)
 
       case 'chats':
         return (

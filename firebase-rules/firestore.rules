@@ -1,0 +1,125 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && request.auth.token.role == role;
+    }
+
+    function isHospitalStaff() {
+      return hasRole('doctor') || hasRole('nurse') || hasRole('admin') || hasRole('hospital_admin');
+    }
+
+    function canAccessUserData(userId) {
+      return isOwner(userId) || isHospitalStaff() || hasRole('driver');
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if canAccessUserData(userId);
+      allow write: if isOwner(userId) || hasRole('admin');
+      allow update: if canAccessUserData(userId);
+    }
+
+    // Hospitals collection
+    match /hospitals/{hospitalId} {
+      allow read: if isAuthenticated();
+      allow write, update: if hasRole('admin') || hasRole('hospital_admin');
+    }
+
+    // Appointments collection
+    match /appointments/{appointmentId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.doctorId == request.auth.uid ||
+         resource.data.motherId == request.auth.uid ||
+         isHospitalStaff());
+      allow write: if isHospitalStaff();
+      allow update: if isHospitalStaff() || resource.data.doctorId == request.auth.uid;
+    }
+
+    // Emergencies collection
+    match /emergencies/{emergencyId} {
+      allow read: if isAuthenticated();
+      allow write: if hasRole('mother') || isHospitalStaff();
+      allow update: if isHospitalStaff() || hasRole('driver');
+    }
+
+    // Drivers collection
+    match /drivers/{driverId} {
+      allow read: if isAuthenticated();
+      allow write, update: if isOwner(driverId) || hasRole('admin') || hasRole('hospital_admin');
+    }
+
+    // Transport Requests collection
+    match /transportRequests/{requestId} {
+      allow read: if isAuthenticated();
+      allow write: if hasRole('mother') || isHospitalStaff();
+      allow update: if hasRole('driver') || isHospitalStaff();
+    }
+
+    // Video Calls collection
+    match /videoCalls/{callId} {
+      allow read, write: if isAuthenticated() &&
+        (resource.data.motherId == request.auth.uid ||
+         resource.data.doctorId == request.auth.uid ||
+         isHospitalStaff());
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read: if isOwner(resource.data.userId);
+      allow write: if isAuthenticated(); // Services can write notifications
+      allow update: if isOwner(resource.data.userId);
+    }
+
+    // Messages collection
+    match /messages/{messageId} {
+      allow read: if isAuthenticated() &&
+        exists(/databases/$(database)/documents/threads/$(resource.data.threadId)) &&
+        get(/databases/$(database)/documents/threads/$(resource.data.threadId)).data.memberIds.hasAny([request.auth.uid]);
+      allow write: if isAuthenticated() &&
+        exists(/databases/$(database)/documents/threads/$(resource.data.threadId)) &&
+        get(/databases/$(database)/documents/threads/$(resource.data.threadId)).data.memberIds.hasAny([request.auth.uid]);
+    }
+
+    // Threads collection
+    match /threads/{threadId} {
+      allow read: if isAuthenticated() && resource.data.memberIds.hasAny([request.auth.uid]);
+      allow write: if isAuthenticated() && request.auth.token.role != 'driver';
+      allow update: if isAuthenticated() && resource.data.memberIds.hasAny([request.auth.uid]);
+    }
+
+    // Symptoms collection
+    match /symptoms/{symptomId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.motherId == request.auth.uid || isHospitalStaff());
+      allow write: if hasRole('mother') || isHospitalStaff();
+      allow update: if isHospitalStaff();
+    }
+
+    // Referrals collection
+    match /referrals/{referralId} {
+      allow read, write: if isHospitalStaff();
+    }
+
+    // Subscriptions collection
+    match /subscriptions/{subscriptionId} {
+      allow read: if hasRole('admin') || hasRole('hospital_admin');
+      allow write, update: if hasRole('admin');
+    }
+
+    // Audit Logs collection (read-only for most users)
+    match /auditLogs/{logId} {
+      allow read: if hasRole('admin');
+      allow write: if isAuthenticated(); // Allow services to write audit logs
+    }
+  }
+}

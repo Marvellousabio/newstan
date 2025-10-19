@@ -63,9 +63,16 @@ export default function DoctorHome({
           onSelect={onSelectAppointment}
           onAccept={onAcceptAppointment}
           onCall={() => {}}
-          onOpenPatient={() => {}}
+          onOpenPatient={(motherId) => {
+            const appointment = appointments.find(a => a.motherId === motherId)
+            if (appointment) onSelectAppointment(appointment)
+          }}
         />
-        <SymptomsList symptoms={symptoms} onOpenPatient={() => {}} />
+        <SymptomsList symptoms={symptoms} onOpenPatient={(motherId) => {
+          // Find the appointment for this mother and select it
+          const appointment = appointments.find(a => a.motherId === motherId)
+          if (appointment) onSelectAppointment(appointment)
+        }} />
         <div className="space-y-4">
           <ChatSection
             selectedAppointment={selectedAppointment}
@@ -75,7 +82,10 @@ export default function DoctorHome({
             onSend={onSendMessage}
             user={null as unknown as User}
           />
-          <EmergencyList emergencies={emergencies} onOpenPatient={() => {}} onCall={() => {}} />
+          <EmergencyList emergencies={emergencies} onOpenPatient={(motherId) => {
+            const appointment = appointments.find(a => a.motherId === motherId)
+            if (appointment) onSelectAppointment(appointment)
+          }} onCall={() => {}} />
         </div>
       </div>
     </div>

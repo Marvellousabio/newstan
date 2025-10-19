@@ -220,13 +220,13 @@ function requireRole(...roles) {
 }
 
 // === Appointments API ===
-// GET /api/appointments?doctorId=&patientId=&status=&from=&to=&limit=
+// GET /api/appointments?doctorId=&motherId=&status=&from=&to=&limit=
 app.get('/api/appointments', async (req, res, next) => {
   try {
-    const { doctorId, patientId, status, from, to, limit } = req.query;
+    const { doctorId, motherId, status, from, to, limit } = req.query;
     let ref = db.collection('appointments');
     if (doctorId) ref = ref.where('doctorId', '==', String(doctorId));
-    if (patientId) ref = ref.where('patientId', '==', String(patientId));
+    if (motherId) ref = ref.where('motherId', '==', String(motherId));
     if (status) ref = ref.where('status', '==', String(status));
     if (from) {
       const d = new Date(String(from));
@@ -246,10 +246,10 @@ app.get('/api/appointments', async (req, res, next) => {
 // Export appointments as CSV
 app.get('/api/appointments/export', async (req, res, next) => {
   try {
-    const { doctorId, patientId, status, from, to, limit } = req.query;
+    const { doctorId, motherId, status, from, to, limit } = req.query;
     let ref = db.collection('appointments');
     if (doctorId) ref = ref.where('doctorId', '==', String(doctorId));
-    if (patientId) ref = ref.where('patientId', '==', String(patientId));
+    if (motherId) ref = ref.where('motherId', '==', String(motherId));
     if (status) ref = ref.where('status', '==', String(status));
     if (from) {
       const d = new Date(String(from));
@@ -262,10 +262,10 @@ app.get('/api/appointments/export', async (req, res, next) => {
     const lim = Math.min(parseInt(String(limit || '1000'), 10) || 1000, 5000);
     const snap = await ref.orderBy('startAt', 'desc').limit(lim).get();
     const rows = [
-      ['id', 'patientId', 'doctorId', 'startAt', 'endAt', 'type', 'status', 'notes'],
+      ['id', 'motherId', 'doctorId', 'startAt', 'endAt', 'type', 'status', 'notes'],
       ...snap.docs.map((d) => {
         const a = d.data();
-        return [d.id, a.patientId || '', a.doctorId || '', a.startAt || '', a.endAt || '', a.type || '', a.status || '', (a.notes || '').replaceAll('\n', ' ')]
+        return [d.id, a.motherId || '', a.doctorId || '', a.startAt || '', a.endAt || '', a.type || '', a.status || '', (a.notes || '').replaceAll('\n', ' ')]
       })
     ];
     const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"', '""')}"`).join(',')).join('\n');
@@ -278,9 +278,9 @@ app.get('/api/appointments/export', async (req, res, next) => {
 // POST /api/appointments
 app.post('/api/appointments', requireRole('doctor', 'admin'), async (req, res, next) => {
   try {
-    const { patientId, doctorId, startAt, endAt, type, notes } = req.body || {};
-    if (!patientId || !doctorId || !startAt || !endAt || !type) {
-      return res.status(400).json({ error: 'patientId, doctorId, startAt, endAt, and type are required' });
+    const { motherId, doctorId, startAt, endAt, type, notes } = req.body || {};
+    if (!motherId || !doctorId || !startAt || !endAt || !type) {
+      return res.status(400).json({ error: 'motherId, doctorId, startAt, endAt, and type are required' });
     }
 
     // Conflict detection: overlapping appointments for the same doctor
@@ -302,7 +302,7 @@ app.post('/api/appointments', requireRole('doctor', 'admin'), async (req, res, n
 
     const now = admin.firestore.FieldValue.serverTimestamp();
     const data = {
-      patientId: String(patientId),
+      motherId: String(motherId),
       doctorId: String(doctorId),
       startAt: startISO,
       endAt: endISO,
@@ -414,12 +414,12 @@ app.delete('/api/appointments/:id', requireRole('doctor', 'admin'), async (req, 
   } catch (err) { next(err); }
 });
 
-// === Patients API ===
-// GET /api/patients?query=&limit=
-app.get('/api/patients', async (req, res, next) => {
+// === Mothers API ===
+// GET /api/mothers?query=&limit=
+app.get('/api/mothers', async (req, res, next) => {
   try {
     const { query, limit } = req.query;
-    let ref = db.collection('patients');
+    let ref = db.collection('mothers');
     // For demo, simple list with limit; implement search with an index in production
     const lim = Math.min(parseInt(String(limit || '50'), 10) || 50, 200);
     const snap = await ref.orderBy('createdAt', 'desc').limit(lim).get();
@@ -428,11 +428,13 @@ app.get('/api/patients', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Export patients as CSV
-app.get('/api/patients/export', async (req, res, next) => {
+
+
+// Export mothers as CSV
+app.get('/api/mothers/export', async (req, res, next) => {
   try {
     const { limit } = req.query;
-    let ref = db.collection('patients');
+    let ref = db.collection('mothers');
     const lim = Math.min(parseInt(String(limit || '1000'), 10) || 1000, 5000);
     const snap = await ref.orderBy('createdAt', 'desc').limit(lim).get();
     const rows = [
@@ -444,13 +446,13 @@ app.get('/api/patients/export', async (req, res, next) => {
     ];
     const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"', '""')}"`).join(',')).join('\n');
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="patients.csv"');
+    res.setHeader('Content-Disposition', 'attachment; filename="mothers.csv"');
     res.send(csv);
   } catch (err) { next(err); }
 });
 
-// POST /api/patients
-app.post('/api/patients', requireRole('doctor', 'admin'), async (req, res, next) => {
+// POST /api/mothers
+app.post('/api/mothers', requireRole('doctor', 'admin'), async (req, res, next) => {
   try {
     const { name, email, phone, dob, gender, notes } = req.body || {};
     if (!name) return res.status(400).json({ error: 'name is required' });
@@ -465,11 +467,11 @@ app.post('/api/patients', requireRole('doctor', 'admin'), async (req, res, next)
       createdAt: now,
       updatedAt: now,
     };
-    const doc = await db.collection('patients').add(data);
+    const doc = await db.collection('mothers').add(data);
     await db.collection('auditLogs').add({
       actorId: (req.user && req.user.uid) || req.headers['x-user-id'] || 'demo',
       action: 'create',
-      resourceType: 'patient',
+      resourceType: 'mother',
       resourceId: doc.id,
       after: data,
       at: now,
@@ -481,31 +483,31 @@ app.post('/api/patients', requireRole('doctor', 'admin'), async (req, res, next)
   } catch (err) { next(err); }
 });
 
-// GET /api/patients/:id
-app.get('/api/patients/:id', async (req, res, next) => {
+// GET /api/mothers/:id
+app.get('/api/mothers/:id', async (req, res, next) => {
   try {
-    const doc = await db.collection('patients').doc(req.params.id).get();
+    const doc = await db.collection('mothers').doc(req.params.id).get();
     if (!doc.exists) return res.status(404).json({ error: 'Not found' });
     res.json({ id: doc.id, ...doc.data() });
   } catch (err) { next(err); }
 });
 
-// PATCH /api/patients/:id
-app.patch('/api/patients/:id', requireRole('doctor', 'admin'), async (req, res, next) => {
+// PATCH /api/mothers/:id
+app.patch('/api/mothers/:id', requireRole('doctor', 'admin'), async (req, res, next) => {
   try {
     const allowed = ['name', 'email', 'phone', 'dob', 'gender', 'notes'];
     const updates = {};
     for (const key of allowed) if (key in req.body) updates[key] = req.body[key];
     if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'No valid fields to update' });
     updates.updatedAt = admin.firestore.FieldValue.serverTimestamp();
-    const ref = db.collection('patients').doc(req.params.id);
+    const ref = db.collection('mothers').doc(req.params.id);
     const doc = await ref.get();
     if (!doc.exists) return res.status(404).json({ error: 'Not found' });
     await ref.update(updates);
     await db.collection('auditLogs').add({
       actorId: (req.user && req.user.uid) || req.headers['x-user-id'] || 'demo',
       action: 'update',
-      resourceType: 'patient',
+      resourceType: 'mother',
       resourceId: req.params.id,
       after: updates,
       at: updates.updatedAt,
@@ -517,17 +519,17 @@ app.patch('/api/patients/:id', requireRole('doctor', 'admin'), async (req, res, 
   } catch (err) { next(err); }
 });
 
-// DELETE /api/patients/:id
-app.delete('/api/patients/:id', requireRole('admin'), async (req, res, next) => {
+// DELETE /api/mothers/:id
+app.delete('/api/mothers/:id', requireRole('admin'), async (req, res, next) => {
   try {
-    const ref = db.collection('patients').doc(req.params.id);
+    const ref = db.collection('mothers').doc(req.params.id);
     const doc = await ref.get();
     if (!doc.exists) return res.status(404).json({ error: 'Not found' });
     await ref.delete();
     await db.collection('auditLogs').add({
       actorId: (req.user && req.user.uid) || req.headers['x-user-id'] || 'demo',
       action: 'delete',
-      resourceType: 'patient',
+      resourceType: 'mother',
       resourceId: req.params.id,
       at: admin.firestore.FieldValue.serverTimestamp(),
       ip: req.ip,
@@ -688,6 +690,141 @@ app.post('/api/messages', requireRole('doctor', 'nurse', 'admin', 'mother'), asy
   } catch (err) { next(err); }
 });
 
+
+// === Symptoms API ===
+// GET /api/symptoms?motherId=&limit=
+// === FORM SUBMISSION API ===
+// POST /api/form/submit
+
+app.get('/api/symptoms', async (req, res, next) => {
+  try {
+    const { motherId, limit } = req.query;
+    let ref = db.collection('symptoms');
+    if (motherId) ref = ref.where('motherId', '==', String(motherId));
+
+    const lim = Math.min(parseInt(String(limit || '50'), 10) || 50, 200);
+    const snap = await ref.orderBy('createdAt', 'desc').limit(lim).get();
+    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    res.json({ success: true, data: items });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/symptoms
+app.post('/api/symptoms', requireRole('mother', 'doctor', 'admin'), async (req, res, next) => {
+  try {
+    const { motherId, description, duration, pregnancyWeeks, severity } = req.body || {};
+
+    if (!motherId || !description) {
+      return res.status(400).json({ error: 'motherId and description are required' });
+    }
+
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    const data = {
+      motherId: String(motherId),
+      description: String(description),
+      duration: duration ? String(duration) : '',
+      pregnancyWeeks: pregnancyWeeks ? String(pregnancyWeeks) : '',
+      severity: severity || 'unspecified',
+      reviewStatus: 'pending',
+      reviewedBy: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const docRef = await db.collection('symptoms').add(data);
+
+    await db.collection('auditLogs').add({
+      actorId: req.user?.uid || req.headers['x-user-id'] || 'demo',
+      action: 'create',
+      resourceType: 'symptom',
+      resourceId: docRef.id,
+      after: data,
+      at: now,
+      ip: req.ip,
+      ua: req.headers['user-agent'] || '',
+    });
+
+    const saved = await docRef.get();
+    res.status(201).json({ success: true, data: { id: docRef.id, ...saved.data() } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/symptoms/:id
+app.get('/api/symptoms/:id', async (req, res, next) => {
+  try {
+    const doc = await db.collection('symptoms').doc(req.params.id).get();
+    if (!doc.exists) return res.status(404).json({ error: 'Symptom not found' });
+    res.json({ success: true, data: { id: doc.id, ...doc.data() } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/symptoms/:id
+app.patch('/api/symptoms/:id', requireRole('doctor', 'admin'), async (req, res, next) => {
+  try {
+    const allowed = ['description', 'duration', 'pregnancyWeeks', 'severity', 'reviewStatus', 'reviewedBy'];
+    const updates = {};
+    for (const key of allowed) if (key in req.body) updates[key] = req.body[key];
+    if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'No valid fields to update' });
+
+    updates.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+
+    const ref = db.collection('symptoms').doc(req.params.id);
+    const doc = await ref.get();
+    if (!doc.exists) return res.status(404).json({ error: 'Symptom not found' });
+
+    await ref.update(updates);
+
+    await db.collection('auditLogs').add({
+      actorId: req.user?.uid || req.headers['x-user-id'] || 'demo',
+      action: 'update',
+      resourceType: 'symptom',
+      resourceId: req.params.id,
+      after: updates,
+      at: updates.updatedAt,
+      ip: req.ip,
+      ua: req.headers['user-agent'] || '',
+    });
+
+    const saved = await ref.get();
+    res.json({ success: true, data: { id: saved.id, ...saved.data() } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/symptoms/:id
+app.delete('/api/symptoms/:id', requireRole('admin'), async (req, res, next) => {
+  try {
+    const ref = db.collection('symptoms').doc(req.params.id);
+    const doc = await ref.get();
+    if (!doc.exists) return res.status(404).json({ error: 'Symptom not found' });
+
+    await ref.delete();
+
+    await db.collection('auditLogs').add({
+      actorId: req.user?.uid || req.headers['x-user-id'] || 'demo',
+      action: 'delete',
+      resourceType: 'symptom',
+      resourceId: req.params.id,
+      at: admin.firestore.FieldValue.serverTimestamp(),
+      ip: req.ip,
+      ua: req.headers['user-agent'] || '',
+    });
+
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+
 // === Auth Sessions ===
 // Create session cookie from Firebase ID token
 app.post('/api/session', async (req, res, next) => {
@@ -761,5 +898,6 @@ const shutdown = () => {
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+
 
 module.exports = httpServer;

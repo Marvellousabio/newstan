@@ -12,7 +12,14 @@ type Props = {
   newBookingsCount: number;
 };
 
+
+
 export default function DoctorHeader({ user, onToggleSidebar, onLogout, newBookingsCount }: Props) {
+    const getUserRoleDisplay = () => {
+      if (!user) return 'User';
+      const role = user.name || 'User';
+      return role.charAt(0).toUpperCase() + role.slice(1);
+    };
   return (
     <header className="bg-white border-b shadow-sm">
       <div className="flex justify-between items-center lg:pl-8 px-6 py-4">
@@ -25,7 +32,7 @@ export default function DoctorHeader({ user, onToggleSidebar, onLogout, newBooki
             <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white">D</div>
             <div>
               <h1 className="text-lg font-bold">Doctor Dashboard</h1>
-              <p className="text-xs text-gray-500">Welcome, {user?.name || 'Doctor'}</p>
+              <p className="text-xs text-gray-500">Welcome, {getUserRoleDisplay()}</p>
             </div>
           </div>
         </div>

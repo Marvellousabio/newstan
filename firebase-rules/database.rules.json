@@ -1,0 +1,25 @@
+{
+  "rules": {
+    "locations": {
+      "$userId": {
+        ".read": "auth != null",
+        ".write": "auth != null && (auth.uid == $userId || auth.token.role == 'admin' || auth.token.role == 'hospital_admin' || auth.token.role == 'driver')",
+        ".validate": "newData.hasChildren(['lat', 'lng', 'timestamp'])"
+      }
+    },
+    "availability": {
+      "$entityId": {
+        ".read": "auth != null",
+        ".write": "auth != null && (auth.uid == $entityId || auth.token.role == 'admin' || auth.token.role == 'hospital_admin')",
+        ".validate": "newData.hasChildren(['status', 'lastUpdated'])"
+      }
+    },
+    "videoSignals": {
+      "$callId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['type', 'data', 'timestamp'])"
+      }
+    }
+  }
+}

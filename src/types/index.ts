@@ -1,12 +1,15 @@
 // User Types
 export type UserRole = 'mother' | 'doctor' | 'nurse' | 'driver' | 'admin' | 'hospital_admin';
 
+export const DEFAULT_USER_ROLE: UserRole = 'mother';
+
 export interface User {
     id: string;
     name: string;
     email: string;
     phone: string;
     role: UserRole;
+    hospitalId?: string; // For doctors, nurses, drivers
     location?: {
         lat: number;
         lng: number;
@@ -17,6 +20,7 @@ export interface User {
     emergencyContact?: string;
     bloodType?: string;
     medicalHistory?: string[];
+    fcmToken?: string; // For push notifications
     createdAt: Date;
     updatedAt: Date;
 }
@@ -79,6 +83,7 @@ export interface Hospital {
     subscriptionTier?: 'basic' | 'premium' | 'enterprise';
     rating: number;
     reviews: number;
+    adminId?: string; // Hospital admin user ID
     createdAt: Date;
     updatedAt: Date;
 }
@@ -101,6 +106,7 @@ export interface Emergency {
     estimatedArrivalTime?: Date;
     actualArrivalTime?: Date;
     notes?: string;
+    alertSent: boolean; // Track if notifications were sent
     createdAt: Date;
     updatedAt: Date;
 }
@@ -172,7 +178,7 @@ export interface Notification {
     title: string;
     body: string;
     type: 'emergency' | 'transport' | 'appointment' | 'general';
-    data?: Record<string, any>;
+    data?: Record<string, unknown>;
     isRead: boolean;
     createdAt: Date;
 }
@@ -182,7 +188,7 @@ export interface Referral {
     id: string;
     fromHospitalId: string;
     toHospitalId: string;
-    patientId: string;
+    motherId: string;
     reason: string;
     priority: 'low' | 'medium' | 'high' | 'urgent';
     status: 'pending' | 'accepted' | 'rejected' | 'completed';
@@ -235,7 +241,7 @@ export interface SearchFilters {
 // Real-time Update Types
 export interface RealtimeUpdate {
     type: 'location' | 'availability' | 'status' | 'emergency';
-    data: any;
+    data: Record<string, unknown>;
     timestamp: Date;
 }
 
@@ -250,5 +256,31 @@ export function isNurse(user: User): user is Nurse {
 export function isMother(user: User): user is Mother {
     return user.role === 'mother'
 }
+
+// Firebase Collection Names
+export const COLLECTIONS = {
+    USERS: 'users',
+    HOSPITALS: 'hospitals',
+    APPOINTMENTS: 'appointments',
+    EMERGENCIES: 'emergencies',
+    DRIVERS: 'drivers',
+    TRANSPORT_REQUESTS: 'transportRequests',
+    VIDEO_CALLS: 'videoCalls',
+    NOTIFICATIONS: 'notifications',
+    MESSAGES: 'messages',
+    THREADS: 'threads',
+    SYMPTOMS: 'symptoms',
+    REFERRALS: 'referrals',
+    SUBSCRIPTIONS: 'subscriptions',
+    AUDIT_LOGS: 'auditLogs',
+} as const;
+
+// Firebase Realtime Database Paths
+export const REALTIME_PATHS = {
+    LOCATIONS: 'locations',
+    AVAILABILITY: 'availability',
+    VIDEO_SIGNALS: 'videoSignals',
+} as const;
+
 
 

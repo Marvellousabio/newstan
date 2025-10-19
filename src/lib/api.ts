@@ -4,7 +4,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3
 
 export interface Appointment {
   id: string;
-  patientId: string;
+  motherId: string;
   doctorId: string;
   startAt: string;
   endAt: string;
@@ -16,7 +16,17 @@ export interface Appointment {
   updatedAt: string | { seconds: number; nanoseconds: number };
 }
 
-export interface Patient {
+// Symptoms
+export interface Symptom {
+  id: string;
+  motherId: string;
+  summary: string;
+  details?: string;
+  createdAt: string | { seconds: number; nanoseconds: number };
+  updatedAt: string | { seconds: number; nanoseconds: number };
+}
+
+export interface Mother {
   id: string;
   name: string;
   email?: string;
@@ -102,8 +112,8 @@ export async function updateAppointment(id: string, updates: Partial<Appointment
   return response.json();
 }
 
-// Patients
-export async function fetchPatients(params?: { limit?: number }): Promise<Patient[]> {
+// Mothers
+export async function fetchMothers(params?: { limit?: number }): Promise<Mother[]> {
   const query = new URLSearchParams({
     ...(params?.limit && { limit: params.limit.toString() }),
   });
@@ -113,7 +123,7 @@ export async function fetchPatients(params?: { limit?: number }): Promise<Patien
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch patients');
+    throw new Error('Failed to fetch mothers');
   }
 
   const data = await response.json();
@@ -184,4 +194,23 @@ export async function createThread(members: string[]): Promise<Thread> {
   }
 
   return response.json();
+}
+
+// Symptoms
+export async function fetchSymptoms(motherId?: string, params?: { limit?: number }): Promise<Symptom[]> {
+  const query = new URLSearchParams({
+    ...(motherId && { motherId }),
+    ...(params?.limit && { limit: params.limit.toString() }),
+  });
+
+  const response = await fetch(`${API_BASE_URL}/api/symptoms?${query}`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch symptoms');
+  }
+
+  const data = await response.json();
+  return data.items || [];
 }

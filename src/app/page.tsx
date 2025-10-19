@@ -14,7 +14,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!loading && user) {
       // Redirect authenticated users to their appropriate dashboard
-      router.push('/dashboard');
+      router.push('/dashboard/user.role');
     }
   }, [user, loading, router]);
 

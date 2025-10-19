@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { useRouter } from "next/navigation";
 import { 
   Heart, 
   MapPin, 
@@ -10,7 +11,10 @@ import {
   AlertTriangle,
   CheckCircle,
   X,
-  Loader2
+  Loader2,
+  ClipboardList,
+  CalendarCheck
+
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -43,6 +47,7 @@ export default function EmergencyButton({ currentLocation, isOnline }: Emergency
   const [emergencyData, setEmergencyData] = useState<EmergencyData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const router=useRouter()
 
   // Mock data for demonstration
   const mockHospitals = [
@@ -268,7 +273,7 @@ export default function EmergencyButton({ currentLocation, isOnline }: Emergency
 
               {/* Action Buttons */}
               <div className="flex space-x-3 mt-6">
-                <button className="btn btn-primary flex-1">
+                <button className="btn btn-primary flex-1" >
                   <Phone className="w-4 h-4 mr-2" />
                   Call Hospital
                 </button>
@@ -298,16 +303,16 @@ export default function EmergencyButton({ currentLocation, isOnline }: Emergency
           whileHover={{ y: -2 }}
           className="card p-4 text-center hover:shadow-md transition-shadow"
         >
-          <Phone className="w-6 h-6 text-green-600 mx-auto mb-2" />
-          <span className="text-sm font-medium">Call 911</span>
+           <ClipboardList className="w-6 h-6 text-green-600 mx-auto mb-2" />
+          <span className="text-sm font-medium" onClick={()=>router.push(`/symptoms`)}>Sympthoms</span>
         </motion.button>
 
         <motion.button
           whileHover={{ y: -2 }}
           className="card p-4 text-center hover:shadow-md transition-shadow"
         >
-          <MapPin className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-          <span className="text-sm font-medium">Find Hospitals</span>
+          <CalendarCheck className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+          <span className="text-sm font-medium" onClick={()=>router.push(`/appointments`)}>Book appointment</span>
         </motion.button>
 
         <motion.button
