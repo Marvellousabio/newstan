@@ -5,7 +5,9 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { auth } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
-import type { User } from '@/types'
+import type { User } from "firebase/auth";
+import { useDoctorData } from '@/hooks/useDoctorData'
+import { useRealtimeMessages } from '@/hooks/useRealtimeMessages'
 import {
   FirestoreAppointment,
   FirestoreSymptom,
@@ -51,20 +53,20 @@ export default function DoctorDashboard() {
   const [activeTab, setActiveTab] = useState<
     'home' | 'patients' | 'chats' | 'video' | 'alerts' | 'settings'
   >('home')
+
+
+   const { mothers, appointments, emergencies, newBookingsCount, symptoms } = useDoctorData(user?.uid)
+  const [selectedAppointment, setSelectedAppointment] = useState(null)
+  const { messages, messageText, setMessageText, sendChat } = useRealtimeMessages(selectedAppointment?.id)
+
+
   const [expanded, setExpanded] = useState<boolean>(false)
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
 
-  const [appointments, setAppointments] = useState<FirestoreAppointment[]>([])
-  const [selectedAppointment, setSelectedAppointment] =
-    useState<FirestoreAppointment | null>(null)
-  const [symptoms, setSymptoms] = useState<FirestoreSymptom[]>([])
   const [chatMessages, setChatMessages] = useState<FirestoreMessage[]>([])
-  const [mothers, setMothers] = useState<Mother[]>([])
-  const [messageText, setMessageText] = useState<string>('')
   const [showVideoCall, setShowVideoCall] = useState<boolean>(false)
   const [incomingCall, setIncomingCall] = useState<FirestoreCall | null>(null)
-  const [newBookingsCount, setNewBookingsCount] = useState<number>(0)
-  const [emergencies, setEmergencies] = useState<FirestoreEmergency[]>([])
+  
 const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
 
 
@@ -82,140 +84,142 @@ const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: numbe
 
   // API data fetching
 
-  useEffect(() => {
-    if (!user) return
+  // useEffect(() => {
+  //   if (!user) return
 
-    const loadAppointments = async () => {
-      try {
-        await authenticateSession()
-        const appointmentsData = await fetchAppointments(user.uid)
-        const firestoreAppointments: FirestoreAppointment[] = appointmentsData.map((appt: Appointment) => {
-          const mother = mothers.find(m => m.id === appt.motherId)
-          return {
-            id: appt.id,
-            motherId: appt.motherId,
-            motherName: mother ? mother.name : 'Mother',
-            notes: appt.notes,
-            scheduledAt: new Date(appt.startAt),
-            status: appt.status,
-            urgent: appt.urgent,
-            createdAt: appt.createdAt,
-          }
-        })
-        setAppointments(firestoreAppointments)
+  //   const loadAppointments = async () => {
+  //     try {
+  //       await authenticateSession()
+  //       const appointmentsData = await fetchAppointments(user.uid)
+  //       const firestoreAppointments: FirestoreAppointment[] = appointmentsData.map((appt: Appointment) => {
+  //         const mother = mothers.find(m => m.id === appt.motherId)
+  //         return {
+  //           id: appt.id,
+  //           motherId: appt.motherId,
+  //           motherName: mother ? mother.name : 'Mother',
+  //           notes: appt.notes,
+  //           scheduledAt: new Date(appt.startAt),
+  //           status: appt.status,
+  //           urgent: appt.urgent,
+  //           createdAt: appt.createdAt,
+  //         }
+  //       })
+  //       setAppointments(firestoreAppointments)
 
-        if (!selectedAppointment && firestoreAppointments.length) setSelectedAppointment(firestoreAppointments[0])
+  //       if (!selectedAppointment && firestoreAppointments.length) setSelectedAppointment(firestoreAppointments[0])
 
-        const tenMinutesAgo = Date.now() - 10 * 60 * 1000
-        const recent = firestoreAppointments.filter((a) => {
-          const created = typeof a.createdAt === 'object' && a.createdAt.seconds
-            ? a.createdAt.seconds * 1000
-            : new Date(a.createdAt).getTime()
-          return created >= tenMinutesAgo
-        })
-        setNewBookingsCount(recent.length)
+  //       const tenMinutesAgo = Date.now() - 10 * 60 * 1000
+  //       const recent = firestoreAppointments.filter((a) => {
+  //         const created = typeof a.createdAt === 'object' && a.createdAt.seconds
+  //           ? a.createdAt.seconds * 1000
+  //           : new Date(a.createdAt).getTime()
+  //         return created >= tenMinutesAgo
+  //       })
+  //       setNewBookingsCount(recent.length)
 
-        setEmergencies(firestoreAppointments.filter((a) => a.urgent === true))
-      } catch (error) {
-        console.error('Failed to load appointments:', error)
-      }
-    }
+  //       setEmergencies(firestoreAppointments.filter((a) => a.urgent === true))
+  //     } catch (error) {
+  //       console.error('Failed to load appointments:', error)
+  //     }
+  //   }
 
-    loadAppointments()
-  }, [user, selectedAppointment])
+  //   loadAppointments()
+  // }, [user])
 
   // Fetch mothers data
-  useEffect(() => {
-    if (!user) return
+  // useEffect(() => {
+  //   if (!user) return
 
-    const loadMothers = async () => {
-      try {
-        await authenticateSession()
-        const mothersData = await fetchMothers()
-        setMothers(mothersData)
-      } catch (error) {
-        console.error('Failed to load mothers:', error)
-      }
-    }
+  //   const loadMothers = async () => {
+  //     try {
+  //       await authenticateSession()
+  //       const mothersData = await fetchMothers()
+  //       setMothers(mothersData)
+  //     } catch (error) {
+  //       console.error('Failed to load mothers:', error)
+  //     }
+  //   }
 
-    loadMothers()
-  }, [user])
+  //   loadMothers()
+  // }, [user])
 
   // Fetch symptoms
-  useEffect(() => {
-    if (!user) return
+  // useEffect(() => {
+  //   if (!user) return
 
-    const loadSymptoms = async () => {
-      try {
-        await authenticateSession()
-        const symptomsData = await fetchSymptoms()
-        const firestoreSymptoms: FirestoreSymptom[] = symptomsData.map((symptom: Symptom) => ({
-          id: symptom.id,
-          motherId: symptom.motherId,
-          summary: symptom.summary,
-          details: symptom.details,
-          createdAt: symptom.createdAt,
-        }))
-        setSymptoms(firestoreSymptoms)
-      } catch (error) {
-        console.error('Failed to load symptoms:', error)
-      }
-    }
+  //   const loadSymptoms = async () => {
+  //     try {
+  //       await authenticateSession()
+  //       const symptomsData = await fetchSymptoms()
+  //       const firestoreSymptoms: FirestoreSymptom[] = symptomsData.map((symptom: Symptom) => ({
+  //         id: symptom.id,
+  //         motherId: symptom.motherId,
+  //         summary: symptom.summary,
+  //         details: symptom.details,
+  //         createdAt: symptom.createdAt,
+  //       }))
+  //       setSymptoms(firestoreSymptoms)
+  //     } catch (error) {
+  //       console.error('Failed to load symptoms:', error)
+  //     }
+  //   }
 
-    loadSymptoms()
-  }, [user])
+  //   loadSymptoms()
+  // }, [user])
 
   // Symptoms are now fetched from API
 
   // Video calls - now integrated with API calls
 
-  useEffect(() => {
-    if (!selectedAppointment) {
-      setChatMessages([])
-      chatRoomRef.current = null
-      return
-    }
+  // useEffect(() => {
+  //   if (!selectedAppointment) {
+  //     setChatMessages([])
+  //     chatRoomRef.current = null
+  //     return
+  //   }
 
-    const loadMessages = async () => {
-      try {
-        await authenticateSession()
-        const threadId = `appointment_${selectedAppointment.id}`
-        chatRoomRef.current = threadId
-        const messagesData = await fetchMessages(threadId)
-        const firestoreMessages: FirestoreMessage[] = messagesData.map((msg: Message) => ({
-          id: msg.id,
-          threadId: msg.threadId,
-          senderId: msg.senderId,
-          text: msg.text,
-          createdAt: msg.createdAt,
-        }))
-        setChatMessages(firestoreMessages)
-      } catch (error) {
-        console.error('Failed to load messages:', error)
-      }
-    }
+  //   const loadMessages = async () => {
+  //     try {
+  //       await authenticateSession()
+  //       const threadId = `appointment_${selectedAppointment.id}`
+  //       chatRoomRef.current = threadId
+  //       const messagesData = await fetchMessages(threadId)
+  //       const firestoreMessages: FirestoreMessage[] = messagesData.map((msg: Message) => ({
+  //         id: msg.id,
+  //         threadId: msg.threadId,
+  //         senderId: msg.senderId,
+  //         text: msg.text,
+  //         createdAt: msg.createdAt,
+  //       }))
+  //       setChatMessages(firestoreMessages)
+  //     } catch (error) {
+  //       console.error('Failed to load messages:', error)
+  //     }
+  //   }
 
-    loadMessages()
+  //   loadMessages()
 
-    // Set up Socket.IO for real-time messages
-    const socket = getSocket()
-    socket.on('message:new', (message: { id: string; threadId: string; senderId: string; text: string; createdAt: string | number | Date }) => {
-      if (message.threadId === chatRoomRef.current) {
-        setChatMessages(prev => [...prev, {
-          id: message.id,
-          threadId: message.threadId,
-          senderId: message.senderId,
-          text: message.text,
-          createdAt: message.createdAt,
-        }])
-      }
-    })
+  //   // Set up Socket.IO for real-time messages
+  //   const socket = getSocket()
+  //   socket.on('message:new', (message: { id: string; threadId: string; senderId: string; text: string; createdAt: string | number | Date }) => {
+  //     if (message.threadId === chatRoomRef.current) {
+  //       setChatMessages(prev => [...prev, {
+  //         id: message.id,
+  //         threadId: message.threadId,
+  //         senderId: message.senderId,
+  //         text: message.text,
+  //         createdAt: message.createdAt,
+  //       }])
+  //     }
+  //   })
 
-    return () => {
-      socket.off('message:new')
-    }
-  }, [selectedAppointment, user])
+  //   return () => {
+  //     socket.off('message:new')
+  //   }
+  // }, [selectedAppointment, user])
 
+
+  
   // ---------------------------
   //  Core Handlers
   // ---------------------------

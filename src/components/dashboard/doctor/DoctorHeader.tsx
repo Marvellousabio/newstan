@@ -17,9 +17,10 @@ type Props = {
 export default function DoctorHeader({ user, onToggleSidebar, onLogout, newBookingsCount }: Props) {
     const getUserRoleDisplay = () => {
       if (!user) return 'User';
-      const role = user.name || 'User';
+      const role = user.name? user.name: user.email || 'User';;
       return role.charAt(0).toUpperCase() + role.slice(1);
-    };
+    }; 
+    
   return (
     <header className="bg-white border-b shadow-sm">
       <div className="flex justify-between items-center lg:pl-8 px-6 py-4">

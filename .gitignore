@@ -45,3 +45,5 @@ medical-8d62a-firebase-adminsdk-fbsvc-3999168c80.json
 
 medtech-79de4-firebase-adminsdk-fbsvc-7439f9f1b8.json
 server/.env
+
+server/seed.js

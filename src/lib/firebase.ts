@@ -4,6 +4,7 @@ import { getFirestore, Firestore } from "firebase/firestore";
 import { getDatabase, Database } from "firebase/database";
 import { getFunctions, Functions } from "firebase/functions";
 import { getMessaging, Messaging, getToken } from "firebase/messaging";
+import { getStorage } from "firebase/storage";
 
 
 const firebaseConfig = {
@@ -24,6 +25,7 @@ export const auth: Auth = getAuth(app);
 export const db: Firestore = getFirestore(app);
 export const realtimeDb: Database = getDatabase(app);
 export const functions: Functions = getFunctions(app);
+export const storage = getStorage(app);
 
 // Messaging only on client
 export const messaging: Messaging | null =
